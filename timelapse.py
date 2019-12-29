@@ -1,5 +1,10 @@
 # Dependancies
 # cv2 must be OpenCV 3
+
+# Last updated
+# - TIME: 2019/12/30/01:48
+# - PLACE: SINGAPORE
+
 import cv2
 import numpy as np
 import glob
@@ -19,12 +24,14 @@ message0 = ('Timelapse Processor V1.0',
 
 enter0 = input('>>> ')
 if not(enter0 in 'Yy'):
-    print('Exiting software...')
+    print('\nExiting software...')
     sys.exit()
 
 name = ''
 outname = ''
 flag_clearframes = 1
+create_timelapse = 1
+val_frame = 25
 cwd = os.getcwd()
 check = 1
 
@@ -46,9 +53,9 @@ while check:
         print()
         print('Name of file: '+name)
         out_name = input('Enter name of output video (default ext: mp4): ')
-        print('Clear frames after processing?')
-        flag_clearframes = 0 if input('>>> ') in 'Yy' else 1
-        # next task: enable customization of speed (waitKey)
+        flag_clearframes = 1 if input('Clear frames after processing? (Y/N): ') in 'Yy' else 0
+        val_frame = int(input('Enter how far each frame should be seperated (all frames: 1; recommended: 25): '))
+        create_timelapse = 1 if input('Create timelapse video? (Y/N if only frames are needed): ') in 'Yy' else 0
         check = 0
     except:
         print('Something went wrong. Start again.')
@@ -61,10 +68,10 @@ while check:
 
 cap = cv2.VideoCapture(name)
 
-frame_name = '[tlframe]_'+out_name+'_'
+frame_name = 'timelapse_'+out_name
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-flag = 25
-in_frames = total_frames//flag
+#flag = val_frame
+in_frames = total_frames//val_frame
 
 message1 = ('',
             'Total frames in input video: '+str(total_frames),
@@ -86,9 +93,9 @@ while(cap.isOpened()):
     frame_no += 1
     ret, img = cap.read()
     if ret==True:
-        if frame_no % flag != 0: continue
+        if frame_no % val_frame != 0: continue
         else:
-            cv2.imwrite('./'+frame_name+str(frame_no).zfill(10)+'.png', img)
+            cv2.imwrite('./'+frame_name+'_'+str(frame_no).zfill(10)+'.png', img)
             if frame_no % prog_bar == 0:
                 print('-', end='')
         if cv2.waitKey(1) & 0xFF == ord(' '):
@@ -103,46 +110,46 @@ cv2.destroyAllWindows()
 #-----------------------------------------------------------------------------#
 ### CREATING VIDEO OUTPUT ###
 
+if create_timelapse:
+    message2 = ('\n',
+                'Collecting frames...',
+                '## {}'.format('-'*50)
+                )
+    [print(x) for x in message2]
+    print('## ', end='')
 
-message2 = ('\n',
-            'Collecting frames...',
-            '## {}'.format('-'*50)
-            )
-[print(x) for x in message2]
-print('## ', end='')
+
+    img_array = []
+    frame_no = 0
+
+    for filename in glob.glob(cwd+'/'+frame_name+'_*.png'):
+        try:
+            img = cv2.imread(filename)
+            height, width, layers = img.shape
+            size = (width,height)
+            img_array.append(img)
+            frame_no += 1
+            if frame_no % prog_bar == 0:
+                print('-', end='')
+        except:
+            pass
 
 
-img_array = []
-frame_no = 0
+    message3 = ('\n',
+                'Writing to output video...',
+                '## {}'.format('-'*50)
+                )
+    [print(x) for x in message3]
+    print('## ', end='')
 
-for filename in glob.glob(cwd+'/'+frame_name+'*.png'):
-    try:
-        img = cv2.imread(filename)
-        height, width, layers = img.shape
-        size = (width,height)
-        img_array.append(img)
-        frame_no += 1
-        if frame_no % prog_bar == 0:
+
+    out = cv2.VideoWriter(out_name+'.mp4',cv2.VideoWriter_fourcc(*'XVID'), 15, size)
+
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+        if i % prog_bar == 0:
             print('-', end='')
-    except:
-        pass
-
-
-message3 = ('\n',
-            'Writing to output video...',
-            '## {}'.format('-'*50)
-            )
-[print(x) for x in message3]
-print('## ', end='')
-
-
-out = cv2.VideoWriter(out_name+'.mp4',cv2.VideoWriter_fourcc(*'XVID'), 15, size)
-
-for i in range(len(img_array)):
-    out.write(img_array[i])
-    if i % prog_bar == 0:
-        print('-', end='')
-out.release()
+    out.release()
 
 #-----------------------------------------------------------------------------#
 ### CLEARING PRODUCED FRAMES FROM DIRECTORY ###
@@ -154,7 +161,7 @@ message4 = ('\n',
             '## {}'.format('-'*50)
             )
             
-if not(flag_clearframes):
+if flag_clearframes:
     try:
     ##    print('Clear frames?')
     ##    isit = input('>>> ')
@@ -166,7 +173,7 @@ if not(flag_clearframes):
         
         #candidates = 
         
-        for filename in glob.glob(cwd+'/'+frame_name'*.png'):
+        for filename in glob.glob(cwd+'/'+frame_name+'_*.png'):
             os.remove(filename)
             frame_no += 1
             if frame_no % prog_bar == 0:
