@@ -2,7 +2,7 @@
 # cv2 must be OpenCV 3
 
 # Last updated
-# - TIME: 2019/12/30/01:48
+# - TIME: 2020/1/2/18:11
 # - PLACE: SINGAPORE
 
 import cv2
@@ -33,6 +33,8 @@ flag_clearframes = 1
 create_timelapse = 1
 val_frame = 25
 cwd = os.getcwd()
+candidates = [x for x in os.listdir() if x[len(x)-4:] in ('.mp4','.avi')]
+
 check = 1
 
 print()
@@ -42,14 +44,14 @@ print(cwd)
 print()
 print('Current items in Directory')
 
-for i in range(len(os.listdir())):
-    print('{}: {}'.format(str(i+1).zfill(3),os.listdir()[i]))
+for i in range(len(candidates)):
+    print('{}: {}'.format(str(i+1).zfill(3),candidates[i]))
         
 while check:
     print()
     print('Enter number index.')
     try:
-        name = os.listdir()[int(input('>>> '))-1]
+        name = candidates[int(input('>>> '))-1]
         print()
         print('Name of file: '+name)
         out_name = input('Enter name of output video (default ext: mp4): ')
@@ -59,7 +61,7 @@ while check:
         check = 0
     except:
         print('Something went wrong. Start again.')
-        #sys.exit()
+        sys.exit()
 
 
 #-----------------------------------------------------------------------------#
@@ -77,9 +79,9 @@ message1 = ('',
             'Total frames in input video: '+str(total_frames),
             'Approximate total frames in output video: '+str(in_frames),
             '',
-            'Press Space to stop process and start next process',
+            'DO NOT PRESS SPACE ELSE AN ERROR MAY OCCUR',
             '',
-            'Creating timelapse_frames in current working directory',
+            'Creating necessary frames in current working directory',
             '## {}'.format('-'*50)
             )
 [print(x) for x in message1]
@@ -95,7 +97,7 @@ while(cap.isOpened()):
     if ret==True:
         if frame_no % val_frame != 0: continue
         else:
-            cv2.imwrite('./'+frame_name+'_'+str(frame_no).zfill(10)+'.png', img)
+            cv2.imwrite('./'+frame_name+'_'+str(frame_no//val_frame).zfill(10)+'.png', img)
             if frame_no % prog_bar == 0:
                 print('-', end='')
         if cv2.waitKey(1) & 0xFF == ord(' '):
@@ -185,13 +187,11 @@ if flag_clearframes:
         sys.exit()
 
 print('\n\n')
-print('Checking if output video exists...')
 
-if out_name+'.mp4' in os.listdir():
+if out_name+'.mp4' in os.listdir() and create_timelapse:
+    print('Checking if output video exists...')
     print(str(out_name+'.mp4')+' exists. Creation successful!')
+    print()
 
-print()
 print('Restart Shell (Ctrl + F6) to clear cache' if 'idlelib.run' in sys.modules else '')
-
-
 
